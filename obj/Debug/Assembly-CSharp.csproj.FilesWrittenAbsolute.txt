@@ -1,0 +1,13 @@
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/UnityEngine.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/UnityEditor.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/UnityEngine.UI.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/UnityEngine.Networking.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Mono.Cecil.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Unity.SerializationLogic.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Unity.DataContract.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/ICSharpCode.NRefactory.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Unity.UNetWeaver.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Unity.UNetWeaver.dll.mdb
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Unity.CecilTools.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Mono.Cecil.Pdb.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Mono.Cecil.Mdb.dll
