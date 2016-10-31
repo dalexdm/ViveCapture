@@ -47,7 +47,11 @@
   <ItemGroup>
      <Compile Include="Assets\Actor.cs" />
      <Compile Include="Assets\ActorJoint.cs" />
+     <Compile Include="Assets\Bone.cs" />
      <Compile Include="Assets\PrimitiveTimeline.cs" />
+     <Compile Include="Assets\SceneManager.cs" />
+     <Compile Include="Assets\Skeleton.cs" />
+     <Compile Include="Assets\Timeline.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>

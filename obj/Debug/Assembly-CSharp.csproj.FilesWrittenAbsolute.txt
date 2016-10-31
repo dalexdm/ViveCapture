@@ -11,3 +11,7 @@
 /Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Unity.CecilTools.dll
 /Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Mono.Cecil.Pdb.dll
 /Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Mono.Cecil.Mdb.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Assembly-CSharp.dll.mdb
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Temp/bin/Debug/Assembly-CSharp.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/obj/Debug/Assembly-CSharp.dll
+/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/obj/Debug/Assembly-CSharp.dll.mdb

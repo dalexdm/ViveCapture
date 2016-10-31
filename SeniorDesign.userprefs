@@ -1,14 +1,18 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/PrimitiveTimeline.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Timeline.cs">
     <Files>
-      <File FileName="Assets/Actor.cs" Line="26" Column="1" />
-      <File FileName="Assets/ActorJoint.cs" Line="10" Column="2" />
-      <File FileName="Assets/PrimitiveTimeline.cs" Line="46" Column="1" />
+      <File FileName="Assets/Actor.cs" Line="27" Column="4" />
+      <File FileName="Assets/Timeline.cs" Line="106" Column="64" />
+      <File FileName="Assets/Skeleton.cs" Line="54" Column="36" />
+      <File FileName="Assets/Bone.cs" Line="54" Column="4" />
+      <File FileName="Assets/SceneManager.cs" Line="151" Column="2" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/Users/Alexander/Documents/Past Coding Projects/SeniorDesign/Assets/SceneManager.cs" line="97" column="1" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>
