@@ -5,11 +5,12 @@ using UnityEngine.UI;
 public class SceneManager : MonoBehaviour {
 
 	public Actor mainActor;
+    public Actor onionActor;
 
 	//skeleton construction
 	public Skeleton inProgress;
-	int leftIndex;
-	int rightIndex;
+	public int leftIndex;
+	public int rightIndex;
 	int centerIndex;
 
 	public Slider slider;
@@ -17,8 +18,12 @@ public class SceneManager : MonoBehaviour {
 	public GameObject sliderKeyPrefab;
 	public float currentKey;
 	public float maxKey;
+    public InputField input;
+    public int playbackSpeed;
 
 	public Image statusImage;
+
+    public SteamVR_TrackedController leftCtrl, rightCtrl;
 
 	// Use this for initialization
 	void Start () {
@@ -28,6 +33,9 @@ public class SceneManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+
+        if (!leftCtrl || !rightCtrl) acquireControllers();
+
 		//accept key input to create a skeleton on the currently selected frame
 		//Get left controller
 		if (Input.GetMouseButtonUp (0) && Input.GetKey(KeyCode.LeftShift)) {
@@ -91,16 +99,19 @@ public class SceneManager : MonoBehaviour {
 		Skeleton touse = Timeline.Instance.getFramePose(currentKey);
 		if (touse == null) {
 			mainActor.gameObject.SetActive (false);
+            onionActor.gameObject.SetActive(false);
 			return;
 		}
 		touse.update ();
 		mainActor.pose(touse);
+        onionActor.pose(Timeline.Instance.getFramePose(Mathf.Max(0, currentKey - 5)));
 
 	}
 
 	public void addBone (Vector3 pos, int clr) {
 
 		mainActor.gameObject.SetActive (true);
+        onionActor.gameObject.SetActive(true);
 		
 		//one first input of the frame, we should begin constructing a new skeleton
 		if (inProgress == null) {
@@ -152,13 +163,73 @@ public class SceneManager : MonoBehaviour {
 	}
 
 	public void play () {
-		StartCoroutine (playRoutine());
+        slider.value = 0;
+        StartCoroutine (playRoutine());
 	}
 
 	IEnumerator playRoutine() {
 		while (slider.value < slider.maxValue) {
-			slider.value += 1f;
-			yield return null;
+            slider.value += 1;
+            yield return new WaitForSeconds(1.0f/(float) playbackSpeed);
 		}
 	}
+
+    public void inputReceived ()
+    {
+        this.playbackSpeed = int.Parse(input.text);
+    }
+
+    void acquireControllers()
+    {
+        if (!leftCtrl)
+        {
+            GameObject leftObject = GameObject.Find("Controller (left)");
+            if (leftObject)
+            {
+                leftCtrl = leftObject.GetComponent<SteamVR_TrackedController>();
+                leftCtrl.TriggerClicked += leftClicked;
+                leftCtrl.PadClicked += lCenterClicked;
+                leftCtrl.Gripped += clearFrame;
+            }
+        }
+
+        if (!rightCtrl)
+        {
+            GameObject rightObject = GameObject.Find("Controller (right)");
+            if (rightObject)
+            {
+                rightCtrl = rightObject.GetComponent<SteamVR_TrackedController>();
+                rightCtrl.TriggerClicked += rightClicked;
+                rightCtrl.PadClicked += rCenterClicked;
+                rightCtrl.Gripped += clearFrame;
+            }
+        }
+    }
+
+    void leftClicked(object sender, ClickedEventArgs e)
+    {
+        if (leftIndex < 6) addBone(leftCtrl.transform.position, 1);
+    }
+
+    void rightClicked(object sender, ClickedEventArgs e)
+    {
+        if (rightIndex < 6) addBone(rightCtrl.transform.position, 2);
+    }
+
+    void lCenterClicked (object sender, ClickedEventArgs e)
+    {
+        if (centerIndex < 3) addBone(leftCtrl.transform.position, 0);
+    }
+
+    void rCenterClicked(object sender, ClickedEventArgs e)
+    {
+        if (centerIndex < 3) addBone(rightCtrl.transform.position, 0);
+    }
+
+    void clearFrame(object sender, ClickedEventArgs e)
+    {
+        ChangeFrame();
+    }
+
+
 }
