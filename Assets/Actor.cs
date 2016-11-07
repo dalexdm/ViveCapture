@@ -8,11 +8,11 @@ public class Actor : MonoBehaviour
 	public Skeleton skeleton;
 	public GameObject jointPrefab;
 
-	public GameObject[] boneObjects = new GameObject[15];
+    public GameObject[] boneObjects = new GameObject[16];
 
 
 	void Start () {
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			boneObjects [i] = (GameObject)Instantiate (jointPrefab);
 			boneObjects [i].transform.SetParent (transform);
 		}
@@ -26,7 +26,7 @@ public class Actor : MonoBehaviour
 			return;
 		}
 
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			if (s.bones [i] != null) {
 				boneObjects [i].SetActive (true);
 				boneObjects [i].transform.position = s.bones [i].pos;
@@ -44,7 +44,7 @@ public class Actor : MonoBehaviour
 	}
 
 	/*
-	public ActorJoint[] joints = new ActorJoint[15];
+	public ActorJoint[] joints = new ActorJoint[16];
 	public GameObject jointPrefab;
 
 	public int key;
@@ -232,7 +232,7 @@ public class Actor : MonoBehaviour
 	}
 
 	void checkForAdd() {
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			if (joints [i] == null) {
 				return;
 			} else {

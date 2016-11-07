@@ -4,7 +4,7 @@ using System;
 
 public class Skeleton : IComparable<Skeleton> {
 
-	public Bone[] bones = new Bone[15];
+	public Bone[] bones = new Bone[16];
 	public float key;
 
 	public Skeleton () {
@@ -96,7 +96,7 @@ public class Skeleton : IComparable<Skeleton> {
 	}
 
 	public void update () {
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			bones[i].boneLength = Timeline.Instance.boneLengths[i];
 		}
 		bones [12].updatePos ();

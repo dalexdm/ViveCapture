@@ -16,11 +16,11 @@ public class Timeline : MonoBehaviour {
 	//Members
 	public List<Skeleton> keyframes = new List<Skeleton>();
 	public List<Skeleton> controlPoints = new List<Skeleton>();
-	public float[] boneLengths = new float[15];
+	public float[] boneLengths = new float[16]; 
 
 	// Use this for initialization
 	void Start () {
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			boneLengths [i] = 0;
 		}
 	}
@@ -52,7 +52,7 @@ public class Timeline : MonoBehaviour {
 		keyframes.Sort ();
 
 		//converge boneLengths with more and more measurements
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			if (boneLengths [i] == 0)
 				boneLengths [i] = newKeyframe.bones [i].boneLength;
 			else
@@ -98,9 +98,8 @@ public class Timeline : MonoBehaviour {
 	}
 
 	Skeleton lerp (int seg, float u) {
-		Skeleton comparing = keyframes [seg];
 		Skeleton output = new Skeleton (keyframes[seg]);
-		for (int i = 0; i < 15; i++) {
+		for (int i = 0; i < 16; i++) {
 			if (i == 12)
 				output.bones [i].pos = Vector3.Lerp(keyframes[seg].bones[12].pos,keyframes[seg+1].bones[12].pos,u);
 			Quaternion v1 = keyframes [seg].bones [i].orientation;
