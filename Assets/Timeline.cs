@@ -35,18 +35,18 @@ public class Timeline : MonoBehaviour {
 		//check if a keyframe exists at this key
 		Skeleton keyToReplace = null;
 		foreach (Skeleton s in keyframes) {
-			if (s.key == newKeyframe.key) {
+			if (Mathf.Abs(s.key - newKeyframe.key) < 0.001) {
 				keyToReplace = s;
 			}
 		}
 
-		//if so, replace it
-		if (keyToReplace != null)
-			keyToReplace = newKeyframe;
-
-		//otherwise, create one
-		else
-			keyframes.Add(newKeyframe);
+        //if so, replace it
+        if (keyToReplace != null)
+        {
+            keyframes.Remove(keyToReplace);
+            Debug.Log("Replacing " + newKeyframe.key);
+        }
+        keyframes.Add(newKeyframe);
 
 		// sort keyframes and reconstruct control points for each quat
 		keyframes.Sort ();
@@ -68,7 +68,7 @@ public class Timeline : MonoBehaviour {
 			u = Mathf.Max (0, Mathf.Min (1, u));
 			return lerp (segment, u);
 		} else if (keyframes.Count == 1) {
-			return keyframes [0];
+			return new Skeleton(keyframes[0]);
 		} else {
 			Debug.Log ("No frames to use");
 			return null;

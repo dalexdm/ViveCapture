@@ -49,6 +49,37 @@ public class Bone {
 		b.parent = this;
 	}
 
+    public void changeBone (Vector3 newPosition)
+    {
+        pos = newPosition;
+
+        //compute a custom bonelength for this frame, to be averaged later
+        if (parent == null) return;
+
+        boneLength = Vector3.Magnitude(pos - parent.pos);
+        if (true) Timeline.Instance.boneLengths[index] = boneLength;
+
+        //Compute orientation quat
+        Vector3 towardChild = Vector3.Normalize(pos - parent.pos);
+        orientation = Quaternion.FromToRotation(Vector3.forward, towardChild);
+        foreach (Bone b in children)
+        {
+            //b.changeBone(orientation);
+        }
+
+        //bone position initialization
+        pos = orientation * Vector3.forward * boneLength + parent.pos;
+    }
+
+    public void changeBone(Quaternion q)
+    {
+        orientation = q * orientation;
+        foreach (Bone b in children)
+        {
+            b.changeBone(q);
+        }
+    }
+
 	public void updatePos () {
 		if (parent != null)
 			pos = orientation * Vector3.forward * boneLength + parent.pos;

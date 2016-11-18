@@ -20,7 +20,11 @@ public class SceneManager : MonoBehaviour
     public float maxKey;
     public InputField input;
     public int playbackSpeed;
-    public bool playing;
+    public bool playing = false;
+
+    public bool editing = false;
+    public Bone rightHolding = null;
+    public Bone leftHolding = null;
 
     //Point Status
     public Image statusImage;
@@ -34,21 +38,29 @@ public class SceneManager : MonoBehaviour
 
     static Vector3 offsetV = new Vector3(0, 1, 0);
 
+    public bool inputDisabled = false;
+
     // Use this for initialization
     void Start()
     {
         ChangeFrame();
         maxKey = slider.maxValue;
         LeftLR = GameObject.Find("LineLeft").GetComponent<LineRenderer>();
-
         RightLR = GameObject.Find("LineRight").GetComponent<LineRenderer>();
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        //ensure the controllers exist and allow editing joints to follow
         if (!leftCtrl || !rightCtrl) acquireControllers();
+        if (leftHolding != null) leftHolding.changeBone(leftCtrl.transform.position);
+        if (rightHolding != null) rightHolding.changeBone(rightCtrl.transform.position);
+        if (rightHolding != null || leftHolding != null)
+        {
+            mainActor.skeleton.update();
+            mainActor.pose(mainActor.skeleton);
+        }
 
         //accept key input to create a skeleton on the currently selected frame
         //Get left controller
@@ -99,12 +111,12 @@ public class SceneManager : MonoBehaviour
 
     public void ChangeFrame()
     {
-
+        //collect previous frame to move markers
         int previous = (int)currentKey;
-
         currentKey = slider.value;
         sliderText.text = currentKey.ToString();
 
+        //turn slider indicator red for keyframes
         if (Timeline.Instance.containsKey(currentKey))
         {
             sliderText.transform.parent.gameObject.GetComponent<Image>().color = Color.red;
@@ -116,8 +128,8 @@ public class SceneManager : MonoBehaviour
             sliderText.color = Color.black;
         }
 
-        //move progress markers
-        if (currentKey < 120)
+        //move progress markers smoothly
+        if (currentKey < 119 && lpp.activeSelf)
         {
             if (!playing && currentKey > previous) StartCoroutine(moveThings(previous));
             else
@@ -127,6 +139,7 @@ public class SceneManager : MonoBehaviour
             }
         }
 
+        //dont save incomplete skeletons in progress
         inProgress = null;
         leftIndex = 0;
         rightIndex = 0;
@@ -138,12 +151,12 @@ public class SceneManager : MonoBehaviour
         if (touse == null)
         {
             mainActor.gameObject.SetActive(false);
-            onionActor.gameObject.SetActive(false);
+            //onionActor.gameObject.SetActive(false);
             return;
         }
         touse.update();
         mainActor.pose(touse);
-        onionActor.pose(Timeline.Instance.getFramePose(Mathf.Max(0, currentKey - 5)));
+        //onionActor.pose(Timeline.Instance.getFramePose(Mathf.Max(0, currentKey - 5)));
 
     }
 
@@ -151,7 +164,7 @@ public class SceneManager : MonoBehaviour
     {
 
         mainActor.gameObject.SetActive(true);
-        onionActor.gameObject.SetActive(true);
+       //onionActor.gameObject.SetActive(true);
 
         //one first input of the frame, we should begin constructing a new skeleton
         if (inProgress == null)
@@ -201,10 +214,6 @@ public class SceneManager : MonoBehaviour
         inProgress.bones[12].addChild(inProgress.bones[15]);
 
         Timeline.Instance.addKeyframe(inProgress);
-        GameObject newKeyIcon = (GameObject)Instantiate(sliderKeyPrefab, sliderText.transform.position, new Quaternion());
-        newKeyIcon.transform.SetParent(slider.transform.parent);
-        newKeyIcon.transform.localScale = new Vector3(1, 1, 1);
-        newKeyIcon.transform.position -= new Vector3(0, 10, 0);
         slider.value += 10;
 
     }
@@ -218,14 +227,15 @@ public class SceneManager : MonoBehaviour
 
     IEnumerator playRoutine()
     {
-        onionActor.gameObject.SetActive(false);
+        //onion.gameObject.SetActive(false);
         while (playing)
         {
             slider.value += 1;
-            if (slider.value > Timeline.Instance.keyframes[Timeline.Instance.keyframes.Count - 1].key + 10) slider.value = 0;
+            //if (slider.value > Timeline.Instance.keyframes[Timeline.Instance.keyframes.Count - 1].key + 10) slider.value = 0;
+            if (slider.value >= slider.maxValue) slider.value = 0;
             yield return new WaitForSeconds(1.0f / (float)playbackSpeed);
         }
-        onionActor.gameObject.SetActive(true);
+        //onionActor.gameObject.SetActive(true);
     }
 
     IEnumerator recordRoutine()
@@ -259,6 +269,8 @@ public class SceneManager : MonoBehaviour
 
         leftCtrl.gameObject.GetComponent<TrailRenderer>().enabled = false;
         rightCtrl.gameObject.GetComponent<TrailRenderer>().enabled = false;
+        lpp.SetActive(true);
+        rpp.SetActive(true);
         recording = false;
         slider.value = 0;
     }
@@ -296,6 +308,7 @@ public class SceneManager : MonoBehaviour
                 leftCtrl.TriggerClicked += leftClicked;
                 leftCtrl.PadClicked += lCenterClicked;
                 leftCtrl.Gripped += clearFrame;
+                leftCtrl.TriggerUnclicked += finishEditLeft;
             }
         }
 
@@ -308,29 +321,79 @@ public class SceneManager : MonoBehaviour
                 rightCtrl.TriggerClicked += rightClicked;
                 rightCtrl.PadClicked += rCenterClicked;
                 rightCtrl.Gripped += clearFrame;
+                rightCtrl.TriggerUnclicked += finishEditRight;
             }
         }
     }
 
+    Bone getClosestBone (Vector3 pos)
+    {
+        //if no mainactor is up, that means we have no bones to grab
+        if (!mainActor.gameObject.activeSelf) return null;
+        Bone closest = null;
+        float dist = 1;
+        foreach (Bone b in mainActor.skeleton.bones)
+        {
+            if ((b.pos - pos).sqrMagnitude < dist)
+            {
+                dist = (b.pos - pos).sqrMagnitude;
+                closest = b;
+            }
+        }
+        return closest;
+    }
+
     void leftClicked(object sender, ClickedEventArgs e)
     {
+        if (inputDisabled) return;
         if (recording) StartCoroutine(recordRoutine());
+        else if (editing)
+        {
+            leftHolding = getClosestBone(leftCtrl.transform.position);
+        }
         else if (leftIndex < 6) addBone(leftCtrl.transform.position, 1);
+    }
+
+    void finishEditLeft(object sender, ClickedEventArgs e)
+    {
+        if (leftHolding != null)
+        {
+            mainActor.skeleton.key = currentKey;
+            Timeline.Instance.addKeyframe(mainActor.skeleton);
+        }
+        leftHolding = null;
+    }
+
+    void finishEditRight(object sender, ClickedEventArgs e)
+    {
+        if (rightHolding != null)
+        {
+            mainActor.skeleton.key = currentKey;
+            Timeline.Instance.addKeyframe(mainActor.skeleton);
+        }
+        rightHolding = null;
     }
 
     void rightClicked(object sender, ClickedEventArgs e)
     {
+        if (inputDisabled) return;
         if (recording) StartCoroutine(recordRoutine());
+        else if (editing)
+        {
+            rightHolding = getClosestBone(rightCtrl.transform.position);
+        }
         else if (rightIndex < 6) addBone(rightCtrl.transform.position, 2);
     }
 
     void lCenterClicked(object sender, ClickedEventArgs e)
     {
+        if (inputDisabled) return;
         if (centerIndex < 3) addBone(leftCtrl.transform.position, 0);
     }
 
     void rCenterClicked(object sender, ClickedEventArgs e)
     {
+        if (inputDisabled) return;
         if (centerIndex < 3) addBone(rightCtrl.transform.position, 0);
     }
 

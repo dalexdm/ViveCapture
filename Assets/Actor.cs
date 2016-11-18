@@ -26,6 +26,8 @@ public class Actor : MonoBehaviour
 			return;
 		}
 
+        skeleton = s;
+
 		for (int i = 0; i < 16; i++) {
 			if (s.bones [i] != null) {
 				boneObjects [i].SetActive (true);
