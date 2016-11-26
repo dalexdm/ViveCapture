@@ -30,36 +30,45 @@ public class Timeline : MonoBehaviour {
 	
 	}
 
-	public void addKeyframe (Skeleton newKeyframe) {
+    public void addKeyframe(Skeleton newKeyframe) {
 
-		//check if a keyframe exists at this key
-		Skeleton keyToReplace = null;
-		foreach (Skeleton s in keyframes) {
-			if (Mathf.Abs(s.key - newKeyframe.key) < 0.001) {
-				keyToReplace = s;
-			}
-		}
+        //check if a keyframe exists at this key
+        Skeleton keyToReplace = null;
+        foreach (Skeleton s in keyframes) {
+            if (Mathf.Abs(s.key - newKeyframe.key) < 0.001) {
+                keyToReplace = s;
+            }
+        }
 
         //if so, replace it
-        if (keyToReplace != null)
-        {
-            keyframes.Remove(keyToReplace);
-            Debug.Log("Replacing " + newKeyframe.key);
-        }
+        if (keyToReplace != null) keyframes.Remove(keyToReplace);
         keyframes.Add(newKeyframe);
 
-		// sort keyframes and reconstruct control points for each quat
-		keyframes.Sort ();
+        // sort keyframes and reconstruct control points for each quat
+        keyframes.Sort();
 
-		//converge boneLengths with more and more measurements
-		for (int i = 0; i < 16; i++) {
-			if (boneLengths [i] == 0)
-				boneLengths [i] = newKeyframe.bones [i].boneLength;
-			else
-				boneLengths [i] = (boneLengths [i] + newKeyframe.bones [i].boneLength) / 2;
-		}
+        //converge boneLengths with more and more measurements
+        for (int i = 0; i < 16; i++) {
+            if (boneLengths[i] == 0)
+                boneLengths[i] = newKeyframe.bones[i].boneLength;
+            else
+                boneLengths[i] = (boneLengths[i] + newKeyframe.bones[i].boneLength) / 2;
+        }
+    }
+	
+    public void delete (int key)
+    {
+        Skeleton keyToReplace = null;
+        foreach (Skeleton s in keyframes)
+        {
+            if (Mathf.Abs(s.key - key) < 0.001)
+            {
+                keyToReplace = s;
+            }
+        }
 
-	}
+        if (keyToReplace != null) keyframes.Remove(keyToReplace);
+    }
 
 	public Skeleton getFramePose(float key) {
 		if (keyframes.Count > 1) {

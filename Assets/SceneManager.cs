@@ -109,6 +109,21 @@ public class SceneManager : MonoBehaviour
         }
     }
 
+    public void delete()
+    {
+        Timeline.Instance.delete((int) currentKey);
+        Skeleton touse = Timeline.Instance.getFramePose(currentKey);
+        if (touse == null)
+        {
+            mainActor.gameObject.SetActive(false);
+            return;
+        }
+        touse.update();
+        mainActor.pose(touse);
+    }
+
+
+
     public void ChangeFrame()
     {
         //collect previous frame to move markers

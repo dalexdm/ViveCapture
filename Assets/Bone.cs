@@ -10,6 +10,7 @@ public class Bone {
 	public float boneLength;
 	public Bone parent;
 	public int index;
+    public GameObject mesh;
 
 
 	public Bone (Vector3 pos, int index) {

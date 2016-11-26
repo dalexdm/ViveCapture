@@ -7,9 +7,10 @@ public class ControllerUI : MonoBehaviour {
     SteamVR_TrackedController ctrl;
     public GameObject menu;
     public SceneManager sm;
-    GameObject handle;
+    public GameObject handle;
     Vector3 endpos;
     Vector3 startpos;
+    public ControllerUI otherUI;
 
     public GameObject fing;
 
@@ -19,7 +20,6 @@ public class ControllerUI : MonoBehaviour {
 	void Start () {
         ctrl = gameObject.GetComponent<SteamVR_TrackedController>();
         if (ctrl) ctrl.MenuButtonClicked += openUI;
-        handle = sm.slider.transform.GetChild(2).GetChild(0).gameObject;
         setFings();
     }
 	
@@ -27,10 +27,42 @@ public class ControllerUI : MonoBehaviour {
 	void Update () {
         if (isHolding)
         {
-            float theta = Vector3.Angle(ctrl.transform.position - startpos, endpos - startpos);
-            float mag = Vector3.Magnitude(ctrl.transform.position - startpos) * Mathf.Cos(theta * Mathf.Deg2Rad);
-            mag /= Vector3.Magnitude(endpos - startpos);
-            sm.slider.value = Mathf.Max(0, Mathf.Min(mag * sm.slider.maxValue, sm.slider.maxValue));
+
+            handle.transform.position = ctrl.transform.position;
+            Vector3 toCtrl = handle.transform.localPosition;
+            toCtrl[2] = 0;
+            toCtrl.Normalize();
+
+            if (toCtrl[1] < 0.3 && toCtrl[1] > 0 && toCtrl[0] < 0) {
+                toCtrl[1] = 0.287f;
+                toCtrl[0] = -0.957f;
+            } else if (toCtrl[1] > -0.3 && toCtrl[1] < 0 && toCtrl[0] < 0) {
+                toCtrl[1] = -0.287f;
+                toCtrl[0] = -0.957f;
+            }
+
+            //calculate timeline point
+            handle.transform.localPosition = toCtrl * 800f;
+
+            float perc;
+            if (toCtrl[1] > 0)
+            {
+                perc = Mathf.Acos(-toCtrl[0]) / 6.2831f;
+                perc = (perc - 0.04774f) * 1.1037f;
+            }
+            else
+            {
+                perc = Mathf.Acos(-toCtrl[0]) / 6.2831f;
+                perc = 1 - (perc - 0.04774f) * 1.1037f;
+            }
+
+
+                sm.slider.value = perc * (sm.slider.maxValue - 1);
+
+            //float theta = Vector3.Angle(ctrl.transform.position - startpos, endpos - startpos);
+            //float mag = Vector3.Magnitude(ctrl.transform.position - startpos) * Mathf.Cos(theta * Mathf.Deg2Rad);
+            //mag /= Vector3.Magnitude(endpos - startpos);
+            //sm.slider.value = Mathf.Max(0, Mathf.Min(mag * sm.slider.maxValue, sm.slider.maxValue));
         }
 
         fing.transform.position = this.transform.position;
@@ -62,7 +94,10 @@ public class ControllerUI : MonoBehaviour {
 
     void grabHold (object sender, ClickedEventArgs e)
     {
-        if (Vector3.SqrMagnitude(handle.transform.position - transform.position) < 0.15f)  isHolding = true;
+        if (Vector3.SqrMagnitude(handle.transform.position - transform.position) < 0.25f)
+        {
+            isHolding = true;
+        }
     }
 
     void unHold(object sender, ClickedEventArgs e)
@@ -76,7 +111,7 @@ public class ControllerUI : MonoBehaviour {
         while (true)
         {
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 5; i++)
             {
                 if (Vector3.SqrMagnitude(menu.transform.GetChild(i).position - transform.position) < 0.15f && !isHolding)
                 {
@@ -110,7 +145,6 @@ public class ControllerUI : MonoBehaviour {
                 sm.editing = false;
                 sm.leftHolding = null;
                 sm.rightHolding = null;
-                sm.slider.value = 0;
                 break;
             case 2:
                 sm.playing = false;
@@ -124,11 +158,17 @@ public class ControllerUI : MonoBehaviour {
                 sm.leftHolding = null;
                 sm.rightHolding = null;
                 break;
+            case 4:
+                sm.delete();
+                sm.leftHolding = null;
+                sm.rightHolding = null;
+                break;
             default:
                 break;
         }
 
         setFings();
+        otherUI.setFings();
     }
 
     void setFings()

@@ -33,11 +33,16 @@ public class Actor : MonoBehaviour
 				boneObjects [i].SetActive (true);
 				boneObjects [i].transform.position = s.bones [i].pos;
 				LineRenderer lr = boneObjects [i].GetComponent<LineRenderer> ();
-				lr.SetPosition (0, lr.transform.position);
-				if (s.bones [i].parent == null)
-					lr.SetPosition(1,lr.transform.position);
-				else 
-					lr.SetPosition(1,s.bones[i].parent.pos);
+                lr.SetPosition (0, lr.transform.position);
+                if (s.bones[i].parent == null)
+                {
+                    lr.SetPosition(1, lr.transform.position);
+                }
+                else
+                {
+                    lr.SetPosition(1, s.bones[i].parent.pos);
+                    
+                }
 
 			} else {
 				boneObjects [i].SetActive (false);
