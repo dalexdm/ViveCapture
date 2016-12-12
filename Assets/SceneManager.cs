@@ -6,11 +6,13 @@ public class SceneManager : MonoBehaviour
 {
 
     public Actor mainActor;
-    public Actor onionActor;
 
     //skeleton construction
-    public Skeleton inProgress;
-    public int leftIndex, rightIndex, centerIndex;
+    Skeleton inProgress;
+    int leftIndex, rightIndex, centerIndex;
+    public GameObject testPrefab;
+    GameObject[] testPoints = new GameObject[16];
+    Vector3[] skelePoints = new Vector3[16];
 
     //Slider Module
     public Slider slider;
@@ -18,16 +20,17 @@ public class SceneManager : MonoBehaviour
     public GameObject sliderKeyPrefab;
     public float currentKey;
     public float maxKey;
-    public InputField input;
     public int playbackSpeed;
     public bool playing = false;
+    public bool isScaling;
 
     public bool editing = false;
-    public Bone rightHolding = null;
-    public Bone leftHolding = null;
+    public GameObject rightHolding = null;
+    public GameObject leftHolding = null;
 
     //Point Status
     public Image statusImage;
+    Vector3 lFoot, rFoot;
 
     //Tracker lines
     public SteamVR_TrackedController leftCtrl, rightCtrl;
@@ -35,202 +38,103 @@ public class SceneManager : MonoBehaviour
     public LineRenderer LeftLR, RightLR;
     public Vector3[] LPoints, RPoints;
     public GameObject lpp, rpp;
+    public Quaternion ls, rs;
+    public Quaternion ljs, rjs;
 
     static Vector3 offsetV = new Vector3(0, 1, 0);
 
     public bool inputDisabled = false;
+    Color keyColor, noKeyColor;
 
     // Use this for initialization
     void Start()
     {
-        ChangeFrame();
+        Timeline.Instance.addKeyframe(new Skeleton(), 0);
         maxKey = slider.maxValue;
         LeftLR = GameObject.Find("LineLeft").GetComponent<LineRenderer>();
         RightLR = GameObject.Find("LineRight").GetComponent<LineRenderer>();
+
+        lFoot = mainActor.boneObjects[9].transform.position;
+        rFoot = mainActor.boneObjects[15].transform.position;
+
+        for (int i = 0; i < 16; i++)
+        {
+            testPoints[i] = (GameObject)Instantiate(testPrefab);
+        }
+
+        keyColor = new Color32(0xFF, 0x6F, 0x6F, 0xFF);
+        noKeyColor = new Color32(0x6F, 0xB1, 0xFF, 0xFF);
+        mainActor.skeleton = new Skeleton();
+        ChangeFrame();
     }
 
     // Update is called once per frame
     void Update()
     {
+        
+        if (rightHolding)
+        {
+            if (rightHolding == mainActor.gameObject)
+            {
+                rightHolding.transform.position = rightCtrl.transform.position - (mainActor.transform.rotation * (mainActor.offsets[0] * 0.3f));
+                footIK(mainActor.boneObjects[7], mainActor.boneObjects[8], mainActor.boneObjects[9], lFoot);
+                footIK(mainActor.boneObjects[13], mainActor.boneObjects[14], mainActor.boneObjects[15], rFoot);
+            }
+            rightHolding.transform.rotation = ((rightCtrl.transform.rotation * Quaternion.Inverse(rs)) * rjs);
+        }
+        if (leftHolding)
+        {
+            if (leftHolding == mainActor.gameObject)
+            {
+                leftHolding.transform.position = leftCtrl.transform.position - (mainActor.transform.rotation * (mainActor.offsets[0] * 0.3f));
+                footIK(mainActor.boneObjects[7], mainActor.boneObjects[8], mainActor.boneObjects[9], lFoot);
+                footIK(mainActor.boneObjects[13], mainActor.boneObjects[14], mainActor.boneObjects[15], rFoot);
+            }
+            leftHolding.transform.rotation = (leftCtrl.transform.rotation * Quaternion.Inverse(ls)) * ljs;
+        }
+
         //ensure the controllers exist and allow editing joints to follow
         if (!leftCtrl || !rightCtrl) acquireControllers();
-        if (leftHolding != null) leftHolding.changeBone(leftCtrl.transform.position);
-        if (rightHolding != null) rightHolding.changeBone(rightCtrl.transform.position);
-        if (rightHolding != null || leftHolding != null)
-        {
-            mainActor.skeleton.update();
-            mainActor.pose(mainActor.skeleton);
-        }
-
-        //accept key input to create a skeleton on the currently selected frame
-        //Get left controller
-        if (Input.GetMouseButtonUp(0) && Input.GetKey(KeyCode.LeftShift))
-        {
-            Plane plane = new Plane(new Vector3(0, 0, 1), new Vector3());
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            float distance;
-            Vector3 hitpoint;
-            if (plane.Raycast(ray, out distance))
-            {
-                hitpoint = ray.GetPoint(distance);
-                if (leftIndex < 6)
-                    addBone(hitpoint, 1);
-            }
-        }
-
-        //Get right controller
-        if (Input.GetMouseButtonUp(1) && Input.GetKey(KeyCode.LeftShift))
-        {
-            Plane plane = new Plane(new Vector3(0, 0, 1), new Vector3());
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            float distance;
-            Vector3 hitpoint;
-            if (plane.Raycast(ray, out distance))
-            {
-                hitpoint = ray.GetPoint(distance);
-                if (rightIndex < 6)
-                    addBone(hitpoint, 2);
-            }
-        }
-
-        //Get center button tapped on either controller
-        if (Input.GetMouseButtonUp(2) && Input.GetKey(KeyCode.LeftShift))
-        {
-            Plane plane = new Plane(new Vector3(0, 0, 1), new Vector3());
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            float distance;
-            Vector3 hitpoint;
-            if (plane.Raycast(ray, out distance))
-            {
-                hitpoint = ray.GetPoint(distance);
-                if (centerIndex < 3)
-                    addBone(hitpoint, 0);
-            }
-        }
     }
 
     public void delete()
     {
-        Timeline.Instance.delete((int) currentKey);
-        Skeleton touse = Timeline.Instance.getFramePose(currentKey);
-        if (touse == null)
-        {
-            mainActor.gameObject.SetActive(false);
-            return;
-        }
-        touse.update();
-        mainActor.pose(touse);
+        Timeline.Instance.delete((int)currentKey);
     }
-
-
 
     public void ChangeFrame()
     {
-        //collect previous frame to move markers
-        int previous = (int)currentKey;
         currentKey = slider.value;
-        sliderText.text = currentKey.ToString();
 
-        //turn slider indicator red for keyframes
-        if (Timeline.Instance.containsKey(currentKey))
+        for (int i = 0; i < 16; i++)
         {
-            sliderText.transform.parent.gameObject.GetComponent<Image>().color = Color.red;
-            sliderText.color = Color.white;
+            skelePoints[i] = new Vector3(0, 0, 0);
+            testPoints[i].SetActive(false);
         }
-        else
-        {
-            sliderText.transform.parent.gameObject.GetComponent<Image>().color = Color.white;
-            sliderText.color = Color.black;
-        }
+        centerIndex = 0;
+        leftIndex = 0;
+        rightIndex = 0;
+
+        //update slider
+        sliderText.text = currentKey.ToString();
+        float perc = currentKey / slider.maxValue;
+        perc = (1 - perc) / 1.1037f + 0.04774f;
+        sliderText.transform.parent.localPosition = 800f * new Vector3(-Mathf.Cos(perc * 2 * Mathf.PI), -Mathf.Sin(perc * 2 * Mathf.PI), 0);
+
+        //turn slider indicator red for keyframes, blue otherwise
+        if (Timeline.Instance.containsKey(currentKey)) sliderText.transform.parent.gameObject.GetComponent<Image>().color = keyColor;
+        else sliderText.transform.parent.gameObject.GetComponent<Image>().color = noKeyColor;
 
         //move progress markers smoothly
         if (currentKey < 119 && lpp.activeSelf)
         {
-            if (!playing && currentKey > previous) StartCoroutine(moveThings(previous));
-            else
-            {
                 lpp.transform.position = LPoints[(int)currentKey] + offsetV;
                 rpp.transform.position = RPoints[(int)currentKey] + offsetV;
-            }
         }
-
-        //dont save incomplete skeletons in progress
-        inProgress = null;
-        leftIndex = 0;
-        rightIndex = 0;
-        centerIndex = 0;
-        statusImage.gameObject.SetActive(false);
 
         //if we have any skeletons so far, display the main actor in the correct pose
-        Skeleton touse = Timeline.Instance.getFramePose(currentKey);
-        if (touse == null)
-        {
-            mainActor.gameObject.SetActive(false);
-            //onionActor.gameObject.SetActive(false);
-            return;
-        }
-        touse.update();
-        mainActor.pose(touse);
-        //onionActor.pose(Timeline.Instance.getFramePose(Mathf.Max(0, currentKey - 5)));
-
-    }
-
-    public void addBone(Vector3 pos, int clr)
-    {
-
-        mainActor.gameObject.SetActive(true);
-       //onionActor.gameObject.SetActive(true);
-
-        //one first input of the frame, we should begin constructing a new skeleton
-        if (inProgress == null)
-        {
-            inProgress = new Skeleton(currentKey);
-            statusImage.gameObject.SetActive(true);
-            for (int i = 0; i < 15; i++)
-            {
-                statusImage.transform.GetChild(i).gameObject.GetComponent<Image>().color = Color.red;
-            } //construct the necessary components for the actor business
-        }
-
-        switch (clr)
-        {
-            case 0:
-                inProgress.bones[centerIndex + 12] = new Bone(pos, centerIndex + 12);
-                statusImage.transform.GetChild(centerIndex + 12).gameObject.GetComponent<Image>().color = Color.blue;
-                inProgress.addJointCenter(centerIndex);
-                centerIndex++;
-                break;
-            case 1:
-                inProgress.bones[leftIndex] = new Bone(pos, leftIndex);
-                statusImage.transform.GetChild(leftIndex).gameObject.GetComponent<Image>().color = Color.blue;
-                inProgress.addJointLeft(leftIndex);
-                leftIndex++;
-                break;
-            case 2:
-                inProgress.bones[rightIndex + 6] = new Bone(pos, rightIndex + 6);
-                statusImage.transform.GetChild(rightIndex + 6).gameObject.GetComponent<Image>().color = Color.blue;
-                inProgress.addJointRight(rightIndex);
-                rightIndex++;
-                break;
-        }
-
-
-        //subsequent input requires us to rebuild actor
-        mainActor.pose(inProgress);
-
-        //once we have 15 skeleton.bones we can package the actor and send it to the timeline
-        for (int i = 0; i < 15; i++)
-        {
-            if (inProgress.bones[i] == null)
-                return;
-        }
-
-        inProgress.bones[15] = new Bone(Camera.main.transform.position, 15);
-        inProgress.bones[12].addChild(inProgress.bones[15]);
-
-        Timeline.Instance.addKeyframe(inProgress);
-        slider.value += 10;
-
+        Skeleton pose = Timeline.Instance.getFramePose(currentKey);
+        mainActor.pose(pose);
     }
 
     public void play()
@@ -240,17 +144,43 @@ public class SceneManager : MonoBehaviour
         if (playing) StartCoroutine(playRoutine());
     }
 
+    public void scale ()
+    {
+        
+        StartCoroutine(scaling());
+    }
+
+    IEnumerator scaling()
+    {
+        while (true) {
+            if (rightCtrl.triggerPressed && leftCtrl.triggerPressed) break;
+            if (!isScaling) yield break;
+            yield return null;
+        }
+
+        float dist = (rightCtrl.transform.position - leftCtrl.transform.position).magnitude;
+        float initialScale = mainActor.boneObjects[0].transform.localScale[0];
+        float newScale = 0;
+
+        while (rightCtrl.triggerPressed && leftCtrl.triggerPressed)
+        {
+            newScale = initialScale * ((rightCtrl.transform.position - leftCtrl.transform.position).magnitude / dist);
+            mainActor.boneObjects[0].transform.localScale = new Vector3(newScale,newScale,newScale);
+            yield return null;
+        }
+
+        if (isScaling) StartCoroutine(scaling());
+    }
+
     IEnumerator playRoutine()
     {
         //onion.gameObject.SetActive(false);
         while (playing)
         {
             slider.value += 1;
-            //if (slider.value > Timeline.Instance.keyframes[Timeline.Instance.keyframes.Count - 1].key + 10) slider.value = 0;
             if (slider.value >= slider.maxValue) slider.value = 0;
             yield return new WaitForSeconds(1.0f / (float)playbackSpeed);
         }
-        //onionActor.gameObject.SetActive(true);
     }
 
     IEnumerator recordRoutine()
@@ -290,28 +220,6 @@ public class SceneManager : MonoBehaviour
         slider.value = 0;
     }
 
-    IEnumerator moveThings(int old)
-    {
-        float t = 0;
-        float interpolant = 0;
-        int offset = 0;
-
-        while (old + t < currentKey)
-        {
-            offset = (int)Mathf.Floor(t);
-            interpolant = t - offset;
-            lpp.transform.position = Vector3.Lerp(LPoints[old + offset], LPoints[old + offset + 1], interpolant) + offsetV;
-            rpp.transform.position = Vector3.Lerp(RPoints[old + offset], RPoints[old + offset + 1], interpolant) + offsetV;
-            t += 0.15f;
-            yield return null;
-        }
-    }
-
-    public void inputReceived()
-    {
-        this.playbackSpeed = int.Parse(input.text);
-    }
-
     void acquireControllers()
     {
         if (!leftCtrl)
@@ -321,7 +229,6 @@ public class SceneManager : MonoBehaviour
             {
                 leftCtrl = leftObject.GetComponent<SteamVR_TrackedController>();
                 leftCtrl.TriggerClicked += leftClicked;
-                leftCtrl.PadClicked += lCenterClicked;
                 leftCtrl.Gripped += clearFrame;
                 leftCtrl.TriggerUnclicked += finishEditLeft;
             }
@@ -334,24 +241,23 @@ public class SceneManager : MonoBehaviour
             {
                 rightCtrl = rightObject.GetComponent<SteamVR_TrackedController>();
                 rightCtrl.TriggerClicked += rightClicked;
-                rightCtrl.PadClicked += rCenterClicked;
                 rightCtrl.Gripped += clearFrame;
                 rightCtrl.TriggerUnclicked += finishEditRight;
             }
         }
     }
 
-    Bone getClosestBone (Vector3 pos)
+    GameObject getClosestBone (Vector3 pos)
     {
-        //if no mainactor is up, that means we have no bones to grab
-        if (!mainActor.gameObject.activeSelf) return null;
-        Bone closest = null;
+        GameObject closest = null;
         float dist = 1;
-        foreach (Bone b in mainActor.skeleton.bones)
+        for (int i = 0; i < 16; i++)
         {
-            if ((b.pos - pos).sqrMagnitude < dist)
+            GameObject b = mainActor.boneObjects[i];
+            Vector3 center = b.transform.position + (b.transform.rotation * (0.3f * mainActor.offsets[i]));
+            if ((center - pos).sqrMagnitude < dist)
             {
-                dist = (b.pos - pos).sqrMagnitude;
+                dist = (center - pos).sqrMagnitude;
                 closest = b;
             }
         }
@@ -364,29 +270,13 @@ public class SceneManager : MonoBehaviour
         if (recording) StartCoroutine(recordRoutine());
         else if (editing)
         {
+            lFoot = mainActor.boneObjects[9].transform.position;
+            rFoot = mainActor.boneObjects[15].transform.position;
             leftHolding = getClosestBone(leftCtrl.transform.position);
+            if (leftHolding == null) return;
+            ls = leftCtrl.transform.rotation;
+            ljs = leftHolding.transform.rotation;
         }
-        else if (leftIndex < 6) addBone(leftCtrl.transform.position, 1);
-    }
-
-    void finishEditLeft(object sender, ClickedEventArgs e)
-    {
-        if (leftHolding != null)
-        {
-            mainActor.skeleton.key = currentKey;
-            Timeline.Instance.addKeyframe(mainActor.skeleton);
-        }
-        leftHolding = null;
-    }
-
-    void finishEditRight(object sender, ClickedEventArgs e)
-    {
-        if (rightHolding != null)
-        {
-            mainActor.skeleton.key = currentKey;
-            Timeline.Instance.addKeyframe(mainActor.skeleton);
-        }
-        rightHolding = null;
     }
 
     void rightClicked(object sender, ClickedEventArgs e)
@@ -395,21 +285,35 @@ public class SceneManager : MonoBehaviour
         if (recording) StartCoroutine(recordRoutine());
         else if (editing)
         {
+            lFoot = mainActor.boneObjects[9].transform.position;
+            rFoot = mainActor.boneObjects[15].transform.position;
             rightHolding = getClosestBone(rightCtrl.transform.position);
+            if (rightHolding == null) return;
+            rs = rightCtrl.transform.rotation;
+            rjs = rightHolding.transform.rotation;
         }
-        else if (rightIndex < 6) addBone(rightCtrl.transform.position, 2);
     }
 
-    void lCenterClicked(object sender, ClickedEventArgs e)
+    void finishEditLeft(object sender, ClickedEventArgs e)
     {
-        if (inputDisabled) return;
-        if (centerIndex < 3) addBone(leftCtrl.transform.position, 0);
+        if (leftHolding != null)
+        {
+            mainActor.skeleton.rotations[mainActor.getIndexOf(leftHolding)] = leftHolding.transform.localRotation;
+            mainActor.skeleton.rootPos = mainActor.boneObjects[0].transform.position;
+            Timeline.Instance.addKeyframe(mainActor.skeleton, currentKey);
+        }
+        leftHolding = null;
     }
 
-    void rCenterClicked(object sender, ClickedEventArgs e)
+    void finishEditRight(object sender, ClickedEventArgs e)
     {
-        if (inputDisabled) return;
-        if (centerIndex < 3) addBone(rightCtrl.transform.position, 0);
+        if (rightHolding != null)
+        {
+            mainActor.skeleton.rotations[mainActor.getIndexOf(rightHolding)] = rightHolding.transform.localRotation;
+            mainActor.skeleton.rootPos = mainActor.boneObjects[0].transform.position;
+            Timeline.Instance.addKeyframe(mainActor.skeleton, currentKey);
+        }
+        rightHolding = null;
     }
 
     void clearFrame(object sender, ClickedEventArgs e)
@@ -420,6 +324,49 @@ public class SceneManager : MonoBehaviour
     public void startRecord ()
     {
         recording = true;
+    }
+
+    void footIK(GameObject hip, GameObject knee, GameObject ankle, Vector3 target)
+    {
+        float l1 = knee.transform.localPosition.magnitude;
+        float l2 = ankle.transform.localPosition.magnitude;
+
+        // compute vector between target and base joint
+        Vector3 base2tar = target - hip.transform.position;
+        if (base2tar.magnitude > l1 + l2)
+            base2tar *= (l1 + l2 + 0.000001f) / base2tar.magnitude;
+
+        float d = base2tar.magnitude;
+        // Compute desired angle for middle joint 
+        float phi = Mathf.Acos((l1 * l1 + l2 * l2 - d * d) / (2 * l1 * l2));
+        float theta2 = phi - Mathf.PI;
+        float theta1 = Mathf.Asin((l2 * Mathf.Sin(phi)) / d);
+
+        // given desired angle and midJointAxis, compute new local middle joint rotation matrix and update joint transform
+        Quaternion rotMid;
+        Quaternion rotBase;
+
+        rotMid = Quaternion.AngleAxis(theta2 * Mathf.Rad2Deg, hip.transform.right);
+        rotBase = Quaternion.AngleAxis(theta1 * Mathf.Rad2Deg, hip.transform.right);
+
+        knee.transform.localRotation = rotMid;
+        hip.transform.localRotation = rotBase;
+
+        // compute vector between target and base joint
+        Vector3 base2end = ankle.transform.position - hip.transform.position;
+
+        // Compute base joint rotation axis (in global coords) and desired angle
+        float thetaLast = Vector3.Angle(base2end, base2tar);
+        Vector3 baseAxis = hip.transform.rotation * Vector3.Cross(base2end,base2tar).normalized;
+
+        // transform base joint rotation axis to local coordinates
+        Quaternion rotBase2;
+        rotBase2 = Quaternion.AngleAxis(thetaLast, baseAxis);
+        // 9. given desired angle and local rotation axis, compute new local rotation matrix and update base joint transform
+        hip.transform.localRotation = hip.transform.localRotation * rotBase2;
+
+        //mainActor.skeleton.rotations[mainActor.getIndexOf(hip)] = hip.transform.localRotation;
+        //mainActor.skeleton.rotations[mainActor.getIndexOf(knee)] = knee.transform.localRotation;
     }
 
 }

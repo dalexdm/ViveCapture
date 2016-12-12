@@ -11,16 +11,19 @@ public class ControllerUI : MonoBehaviour {
     Vector3 endpos;
     Vector3 startpos;
     public ControllerUI otherUI;
-
+    public Transform ring;
     public GameObject fing;
+    Color boop;
 
     bool isHolding;
 
 	// Use this for initialization
 	void Start () {
+        boop = new Color32(0x3F, 0x3F, 0x3F, 0xFF);
         ctrl = gameObject.GetComponent<SteamVR_TrackedController>();
         if (ctrl) ctrl.MenuButtonClicked += openUI;
         setFings();
+        ring = sm.slider.transform.parent.GetChild(1);
     }
 	
 	// Update is called once per frame
@@ -57,12 +60,7 @@ public class ControllerUI : MonoBehaviour {
             }
 
 
-                sm.slider.value = perc * (sm.slider.maxValue - 1);
-
-            //float theta = Vector3.Angle(ctrl.transform.position - startpos, endpos - startpos);
-            //float mag = Vector3.Magnitude(ctrl.transform.position - startpos) * Mathf.Cos(theta * Mathf.Deg2Rad);
-            //mag /= Vector3.Magnitude(endpos - startpos);
-            //sm.slider.value = Mathf.Max(0, Mathf.Min(mag * sm.slider.maxValue, sm.slider.maxValue));
+            sm.slider.value = perc * (sm.slider.maxValue - 1);
         }
 
         fing.transform.position = this.transform.position;
@@ -84,7 +82,7 @@ public class ControllerUI : MonoBehaviour {
         ctrl.TriggerClicked += grabHold;
         ctrl.TriggerUnclicked += unHold;
         menu.SetActive(true);
-        menu.transform.position = transform.position + transform.forward + Vector3.up;
+        menu.transform.position = transform.position;
         menu.transform.LookAt(Camera.main.transform.position + 2 * (menu.transform.position - Camera.main.transform.position));
         endpos = sm.slider.transform.GetChild(4).position;
         startpos = sm.slider.transform.GetChild(3).position;
@@ -107,6 +105,34 @@ public class ControllerUI : MonoBehaviour {
 
     IEnumerator detectPress ()
     {
+
+        Quaternion basefing = Quaternion.Euler(menu.transform.localRotation.eulerAngles);
+        Quaternion baseRing = Quaternion.Euler(0, 0, 0);
+        menu.transform.localRotation = Quaternion.Euler(menu.transform.localRotation.eulerAngles + new Vector3(0,0,180));
+        ring.localRotation = Quaternion.Euler(0,0,-180);
+        handle.SetActive(false);
+
+        float perc = 0;
+        while (true)
+        {
+            menu.transform.localRotation = Quaternion.Slerp(menu.transform.localRotation, basefing, 0.17f);
+            ring.localRotation = Quaternion.Slerp(ring.localRotation, baseRing, 0.17f);
+            ring.localPosition = new Vector3(ring.localPosition[0], ring.localPosition[1], (1 - perc) * 50);
+            perc += 0.0434f;
+            menu.GetComponent<CanvasGroup>().alpha = perc * perc * perc;
+            ring.GetComponent<CanvasGroup>().alpha = perc * perc * perc;
+            if (Quaternion.Angle(menu.transform.localRotation, basefing) < 3) break;
+            yield return null;
+        }
+
+        handle.SetActive(true);
+        float skale = 0;
+        while (skale < 1.5f)
+        {
+            handle.transform.localScale = new Vector3(skale, skale, skale);
+            skale += 0.2f;
+            yield return null;
+        }
 
         while (true)
         {
@@ -138,6 +164,7 @@ public class ControllerUI : MonoBehaviour {
                 sm.leftHolding = null;
                 sm.rightHolding = null;
                 sm.startRecord();
+                sm.isScaling = false;
                 break;
             case 1:
                 sm.recording = false;
@@ -145,11 +172,14 @@ public class ControllerUI : MonoBehaviour {
                 sm.editing = false;
                 sm.leftHolding = null;
                 sm.rightHolding = null;
+                sm.isScaling = true;
+                sm.scale();
                 break;
             case 2:
                 sm.playing = false;
                 sm.recording = false;
                 sm.editing = true;
+                sm.isScaling = false;
                 break;
             case 3:
                 sm.play();
@@ -157,11 +187,13 @@ public class ControllerUI : MonoBehaviour {
                 sm.editing = false;
                 sm.leftHolding = null;
                 sm.rightHolding = null;
+                sm.isScaling = false;
                 break;
             case 4:
                 sm.delete();
                 sm.leftHolding = null;
                 sm.rightHolding = null;
+                sm.isScaling = false;
                 break;
             default:
                 break;
@@ -175,22 +207,22 @@ public class ControllerUI : MonoBehaviour {
     {
         for (int i = 0; i < 3; i ++)
         {
-            fing.transform.GetChild(0).GetChild(i).gameObject.GetComponent<Image>().color = Color.black;
+            fing.transform.GetChild(0).GetChild(i).gameObject.GetComponent<Image>().color = boop;
             fing.transform.GetChild(0).GetChild(i).GetChild(0).gameObject.GetComponent<Image>().color = Color.white;
         }
 
         if (sm.editing)
         {
             fing.transform.GetChild(0).GetChild(2).gameObject.GetComponent<Image>().color = Color.white;
-            fing.transform.GetChild(0).GetChild(2).GetChild(0).gameObject.GetComponent<Image>().color = Color.black;
+            fing.transform.GetChild(0).GetChild(2).GetChild(0).gameObject.GetComponent<Image>().color = boop;
         } else if (sm.recording)
         {
                 fing.transform.GetChild(0).GetChild(0).gameObject.GetComponent<Image>().color = Color.white;
-                fing.transform.GetChild(0).GetChild(0).GetChild(0).gameObject.GetComponent<Image>().color = Color.black;
+                fing.transform.GetChild(0).GetChild(0).GetChild(0).gameObject.GetComponent<Image>().color = boop;
         } else
         {
             fing.transform.GetChild(0).GetChild(1).gameObject.GetComponent<Image>().color = Color.white;
-            fing.transform.GetChild(0).GetChild(1).GetChild(0).gameObject.GetComponent<Image>().color = Color.black;
+            fing.transform.GetChild(0).GetChild(1).GetChild(0).gameObject.GetComponent<Image>().color = boop;
         }
     }
 }

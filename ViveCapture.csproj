@@ -76,6 +76,7 @@
     <Compile Include="Assets\ActorJoint.cs" />
     <Compile Include="Assets\Bone.cs" />
     <Compile Include="Assets\ControllerUI.cs" />
+    <Compile Include="Assets\IK\Scripts\ik\IKLimb_BrunoFerreira.cs" />
     <Compile Include="Assets\PrimitiveTimeline.cs" />
     <Compile Include="Assets\SceneManager.cs" />
     <Compile Include="Assets\Skeleton.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="Assets\looker.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\IK\Readme.txt" />
     <None Include="Assets\SteamVR\Resources\SteamVR_AlphaOut.shader" />
     <None Include="Assets\SteamVR\Resources\SteamVR_ClearAll.shader" />
     <None Include="Assets\SteamVR\Resources\SteamVR_ColorOut.shader" />
